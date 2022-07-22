@@ -25,7 +25,7 @@ func (w *Writer) Close() (err error) {
 	return err
 }
 
-func (w Writer) initKafkaWriter(kafkaURL string, topic string) {
+func (w *Writer) initKafkaWriter(kafkaURL string, topic string) {
 	w.writer = &kafka.Writer{
 		Addr:     kafka.TCP(kafkaURL),
 		Topic:    topic,
