@@ -1,7 +1,6 @@
-package kafka
+package iokafka
 
 import "github.com/segmentio/kafka-go"
-
 
 type Message struct {
 	Topic     string
