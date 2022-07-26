@@ -7,66 +7,74 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-type KafkaConfig struct {
-	Brokers []string
-	GroupID string
-	Partition int
-	Topic string
+type ScannerConfig struct {
+	Brokers       []string
+	GroupID       string
+	Partition     int
+	Topic         string
 	AttemtsOnFail int
+	FailTimeout   int
 }
 
 type Scanner struct {
-	reader *kafka.Reader
-	ctx    context.Context
-	msg    Message
-	err    error
+	reader     *kafka.Reader
+	ctx        context.Context
+	msg        Message
+	err        error
 	lastOffset int64
-	timeout int
-	attemptsOnFail int
+	cnf        ScannerConfig
 }
 
-func NewScanner(config KafkaConfig) Scanner {
-	scanner := Scanner{
-		ctx:    context.Background(),
-		attemptsOnFail: config.AttemtsOnFail,
+func NewScanner(config ScannerConfig) Scanner {
+
+	s := Scanner{
+		ctx: context.Background(),
+		cnf: config,
 	}
 
-	scanner.initKafkaReader(config)
-	return scanner
+	if s.cnf.AttemtsOnFail == 0 {
+		s.cnf.AttemtsOnFail = 1
+	}
+
+	if s.cnf.FailTimeout == 0 {
+		s.cnf.FailTimeout = 10
+	}
+
+	s.initKafkaReader()
+	return s
 }
 
-func (r *Scanner) Scan() bool {
+func (s *Scanner) Scan() bool {
 	var err error
-	for t := 0; t < r.attemptsOnFail; t++ {
-		msg, err := r.reader.ReadMessage(r.ctx)
+	for t := 0; t < s.cnf.AttemtsOnFail; t++ {
+		msg, err := s.reader.ReadMessage(s.ctx)
 		if err == nil {
-			r.msg = KafkaMessage(msg).ToMessage()
-			r.lastOffset = msg.Offset
+			s.msg = KafkaMessage(msg).ToMessage()
+			s.lastOffset = msg.Offset
 			return true
 		}
-		time.Sleep(time.Duration(r.timeout))
+		time.Sleep(time.Duration(s.cnf.FailTimeout))
 	}
-	r.err = err
+	s.err = err
 	return false
 }
 
-func (r *Scanner) Message() Message {
-	return r.msg
+func (s *Scanner) Message() Message {
+	return s.msg
 }
 
-func (r *Scanner) Err() error {
-	return r.err
+func (s *Scanner) Err() error {
+	return s.err
 }
 
-func (r *Scanner) initKafkaReader(config KafkaConfig) {
-	
+func (s *Scanner) initKafkaReader() {
+
 	conf := kafka.ReaderConfig{
-		Brokers:   config.Brokers,
-		GroupID:   config.GroupID,
-		Partition: config.Partition,
-		Topic:     config.Topic,
+		Brokers:   s.cnf.Brokers,
+		GroupID:   s.cnf.GroupID,
+		Partition: s.cnf.Partition,
+		Topic:     s.cnf.Topic,
 	}
 
-	kafka.NewReader(conf)
+	s.reader = kafka.NewReader(conf)
 }
-
