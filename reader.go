@@ -12,6 +12,7 @@ type KafkaConfig struct {
 	GroupID string
 	Partition int
 	Topic string
+	AttemtsOnFail int
 }
 
 type Scanner struct {
@@ -27,6 +28,7 @@ type Scanner struct {
 func NewScanner(config KafkaConfig) Scanner {
 	scanner := Scanner{
 		ctx:    context.Background(),
+		attemptsOnFail: config.AttemtsOnFail,
 	}
 
 	scanner.initKafkaReader(config)
