@@ -14,6 +14,7 @@ type ScannerConfig struct {
 	Topic         string
 	AttemtsOnFail int
 	FailTimeout   int
+	StartOffset   int64
 }
 
 type Scanner struct {
@@ -70,10 +71,11 @@ func (s *Scanner) Err() error {
 func (s *Scanner) initKafkaReader() {
 
 	conf := kafka.ReaderConfig{
-		Brokers:   s.cnf.Brokers,
-		GroupID:   s.cnf.GroupID,
-		Partition: s.cnf.Partition,
-		Topic:     s.cnf.Topic,
+		Brokers:     s.cnf.Brokers,
+		GroupID:     s.cnf.GroupID,
+		Partition:   s.cnf.Partition,
+		Topic:       s.cnf.Topic,
+		StartOffset: s.cnf.StartOffset,
 	}
 
 	s.reader = kafka.NewReader(conf)
